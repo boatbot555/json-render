@@ -14,16 +14,16 @@ export async function POST(req: Request) {
       });
     }
 
-    const csvContent = await file.text();
+    const content = await file.text();
 
-    if (!csvContent.trim()) {
+    if (!content.trim()) {
       return new Response(JSON.stringify({ error: "File is empty" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
       });
     }
 
-    await initDatabase(csvContent, "data");
+    await initDatabase(content, "data", file.name);
     const schema = await getTableSchema("data");
 
     return new Response(

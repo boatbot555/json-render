@@ -11,26 +11,37 @@ async function getConnection() {
   return connection;
 }
 
-export async function initDatabase(csvContent: string, tableName: string = "data") {
-  const conn = await getConnection();
+export type FileFormat = "csv" | "json";
 
-  // Drop existing table if any
+function detectFormat(filename: string, content: string): FileFormat {
+  if (filename.endsWith(".json")) return "json";
+  if (filename.endsWith(".csv") || filename.endsWith(".tsv")) return "csv";
+  // Sniff content
+  const trimmed = content.trimStart();
+  if (trimmed.startsWith("[") || trimmed.startsWith("{")) return "json";
+  return "csv";
+}
+
+export async function initDatabase(
+  content: string,
+  tableName: string = "data",
+  filename: string = "upload.csv",
+) {
+  const conn = await getConnection();
   await conn.run(`DROP TABLE IF EXISTS ${tableName}`);
 
-  // Create table from CSV using DuckDB's read_csv_auto
-  // We write CSV to a temp approach: use DuckDB's ability to read CSV from string
-  // Actually, DuckDB doesn't read CSV from string directly via SQL, so we use a workaround
-  // We'll create the table by inserting the CSV content as a parameter
+  const format = detectFormat(filename, content);
+  const reader = format === "json" ? "read_json_auto" : "read_csv_auto";
 
-  // Write CSV to a temp file
   const fs = await import("fs");
   const path = await import("path");
   const os = await import("os");
-  const tmpFile = path.join(os.tmpdir(), `duckdb_upload_${Date.now()}.csv`);
-  fs.writeFileSync(tmpFile, csvContent, "utf-8");
+  const ext = format === "json" ? ".json" : ".csv";
+  const tmpFile = path.join(os.tmpdir(), `duckdb_upload_${Date.now()}${ext}`);
+  fs.writeFileSync(tmpFile, content, "utf-8");
 
   try {
-    await conn.run(`CREATE TABLE ${tableName} AS SELECT * FROM read_csv_auto('${tmpFile}')`);
+    await conn.run(`CREATE TABLE ${tableName} AS SELECT * FROM ${reader}('${tmpFile}')`);
   } finally {
     fs.unlinkSync(tmpFile);
   }

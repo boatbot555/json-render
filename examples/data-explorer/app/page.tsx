@@ -184,8 +184,8 @@ function UploadZone({ onUpload }: { onUpload: (info: DatasetInfo) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (file: File) => {
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a CSV file");
+    if (!file.name.match(/\.(csv|tsv|json)$/i)) {
+      setError("Please upload a CSV or JSON file");
       return;
     }
     setUploading(true);
@@ -223,7 +223,7 @@ function UploadZone({ onUpload }: { onUpload: (info: DatasetInfo) => void }) {
           <Database className="h-12 w-12 mx-auto text-muted-foreground" />
           <h2 className="text-2xl font-semibold tracking-tight">Liquid Data View</h2>
           <p className="text-muted-foreground">
-            Upload a CSV file, then ask natural language questions to explore your data with interactive dashboards.
+            Upload a CSV or JSON file, then ask natural language questions to explore your data with interactive dashboards.
           </p>
         </div>
 
@@ -245,15 +245,15 @@ function UploadZone({ onUpload }: { onUpload: (info: DatasetInfo) => void }) {
             <div className="flex flex-col items-center gap-3">
               <Upload className="h-8 w-8 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Drop a CSV file here or click to browse</p>
-                <p className="text-xs text-muted-foreground mt-1">Supports any CSV file</p>
+                <p className="text-sm font-medium">Drop a CSV or JSON file here, or click to browse</p>
+                <p className="text-xs text-muted-foreground mt-1">Supports CSV, TSV, and JSON files</p>
               </div>
             </div>
           )}
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.tsv,.json"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0];
